@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useReducer,
   useRef,
@@ -8,6 +9,12 @@ import {
 import { createProxy, isChanged } from 'proxy-compare';
 
 import { useAffectedDebugValue } from './utils';
+
+const isSSR = typeof window === 'undefined'
+  || !window.navigator
+  || /ServerSideRendering|^Deno\//.test(window.navigator.userAgent);
+
+const useIsomorphicLayoutEffect = isSSR ? useEffect : useLayoutEffect;
 
 export const createTrackedSelector = <State>(
   useSelector: <Selected>(selector: (state: State) => Selected) => Selected,
@@ -18,7 +25,7 @@ export const createTrackedSelector = <State>(
     const lastAffected = useRef<typeof affected>();
     const prevState = useRef<State>();
     const lastState = useRef<State>();
-    useEffect(() => {
+    useIsomorphicLayoutEffect(() => {
       lastAffected.current = affected;
       if (prevState.current !== lastState.current
         && isChanged(
